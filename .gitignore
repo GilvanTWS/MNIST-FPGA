@@ -1,0 +1,39 @@
+# ---- Quartus II 13.0 (arquivos gerados na compilação) ----
+db/
+incremental_db/
+output_files/
+greybox_tmp/
+simulation/
+*.qws
+*.bak
+*.bak[0-9]*
+*.rpt
+*.summary
+*.smsg
+*.done
+*.jdi
+*.pin
+*.sof
+*.pof
+*.qarlog
+PLLJ_PLLSPE_INFO.txt
+
+# ---- ModelSim ----
+work/
+rtl_work/
+transcript
+*.wlf
+*.vcd
+*.vstf
+modelsim.ini
+
+# ---- Python ----
+__pycache__/
+*.pyc
+.venv/
+.ipynb_checkpoints/
+
+# ---- Sistema ----
+.DS_Store
+Thumbs.db
+desktop.ini

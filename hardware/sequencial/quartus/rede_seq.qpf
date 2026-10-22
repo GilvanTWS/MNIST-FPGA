@@ -1,0 +1,6 @@
+QUARTUS_VERSION = "13.0"
+DATE = "14:00:00  October 08, 2026"
+
+# Revisions
+
+PROJECT_REVISION = "rede_seq"
