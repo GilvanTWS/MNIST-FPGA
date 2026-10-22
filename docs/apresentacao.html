@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MNIST-FPGA — Linha do tempo do projeto</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #0b1020;
+    --panel: #131a2e;
+    --panel-2: #1a2340;
+    --accent: #4cc9f0;
+    --accent-2: #7b61ff;
+    --text: #e8ecf5;
+    --muted: #93a0b8;
+    --line: #26304d;
+  }
+
+  html, body {
+    height: 100%;
+    background: radial-gradient(circle at 15% 10%, #16224a 0%, var(--bg) 45%, #070a14 100%);
+    color: var(--text);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+    overflow: hidden;
+  }
+
+  #deck { position: relative; height: 100vh; width: 100vw; }
+
+  .slide {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 6vh 8vw;
+    opacity: 0;
+    transform: translateY(14px);
+    pointer-events: none;
+    transition: opacity .35s ease, transform .35s ease;
+    overflow-y: auto;
+  }
+
+  .slide.active { opacity: 1; transform: none; pointer-events: auto; }
+
+  .kicker {
+    font-size: clamp(12px, 1.1vw, 15px);
+    letter-spacing: .22em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 700;
+    margin-bottom: 14px;
+  }
+
+  h1 {
+    font-size: clamp(34px, 4.6vw, 64px);
+    line-height: 1.08;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin-bottom: 18px;
+  }
+
+  h2 {
+    font-size: clamp(26px, 3.2vw, 44px);
+    line-height: 1.12;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    margin-bottom: 10px;
+  }
+
+  h2 .n {
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+    margin-right: 12px;
+  }
+
+  .sub {
+    font-size: clamp(16px, 1.6vw, 21px);
+    color: var(--muted);
+    line-height: 1.5;
+    max-width: 60ch;
+  }
+
+  .accent { color: var(--accent); }
+  .violet { color: var(--accent-2); }
+
+  ul.clean { list-style: none; margin-top: 26px; display: grid; gap: 14px; }
+
+  ul.clean li {
+    position: relative;
+    padding-left: 30px;
+    font-size: clamp(16px, 1.55vw, 21px);
+    line-height: 1.45;
+    color: var(--text);
+  }
+
+  ul.clean li::before {
+    content: "";
+    position: absolute;
+    left: 4px;
+    top: .55em;
+    width: 9px;
+    height: 9px;
+    border-radius: 2px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    transform: rotate(45deg);
+  }
+
+  ul.clean li span.dim { color: var(--muted); }
+
+  .rule {
+    position: absolute;
+    top: 0;
+    left: 8vw;
+    right: 8vw;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--line), transparent);
+  }
+
+  .footer-tag {
+    position: absolute;
+    right: 8vw;
+    bottom: 4.5vh;
+    font-size: 12px;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: #5f6c87;
+  }
+
+  /* Capa */
+  .cover .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--muted);
+    border: 1px solid var(--line);
+    padding: 8px 14px;
+    border-radius: 999px;
+    margin-bottom: 26px;
+    width: fit-content;
+  }
+
+  .cover .badge .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 12px var(--accent);
+  }
+
+  .cover .hint {
+    margin-top: 40px;
+    font-size: 13px;
+    color: #5f6c87;
+    letter-spacing: .08em;
+  }
+
+  /* Linha do tempo horizontal */
+  .timeline {
+    display: flex;
+    align-items: flex-start;
+    gap: 0;
+    margin-top: 44px;
+    position: relative;
+  }
+
+  .timeline::before {
+    content: "";
+    position: absolute;
+    top: 21px;
+    left: 6%;
+    right: 6%;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    opacity: .5;
+  }
+
+  .step { flex: 1; position: relative; text-align: center; padding-top: 0; }
+
+  .step .circle {
+    width: 44px; height: 44px;
+    margin: 0 auto 16px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    font-weight: 800;
+    font-size: 17px;
+    color: var(--bg);
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    position: relative;
+    z-index: 1;
+  }
+
+  .step .label {
+    font-size: clamp(13px, 1.15vw, 16px);
+    line-height: 1.35;
+    color: var(--text);
+    padding: 0 8px;
+  }
+
+  .step .label small {
+    display: block;
+    margin-top: 5px;
+    color: var(--muted);
+    font-size: .82em;
+  }
+
+  /* Cards */
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    margin-top: 32px;
+  }
+
+  .card {
+    background: linear-gradient(180deg, var(--panel), #101730);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 22px 24px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .card::before {
+    content: "";
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: linear-gradient(180deg, var(--accent), var(--accent-2));
+  }
+
+  .card h3 {
+    font-size: clamp(16px, 1.4vw, 19px);
+    margin-bottom: 7px;
+    font-weight: 700;
+  }
+
+  .card p { font-size: clamp(13px, 1.1vw, 15px); color: var(--muted); line-height: 1.45; }
+
+  /* Blocos de código / terminal */
+  pre {
+    margin-top: 26px;
+    background: #060a15;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 20px 24px;
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+    font-size: clamp(12px, 1.05vw, 15px);
+    line-height: 1.55;
+    color: #cfe3ff;
+    overflow-x: auto;
+  }
+
+  pre .ok { color: #5eead4; }
+  pre .arrow { color: var(--accent); }
+  pre .muted { color: #5f6c87; }
+
+  .two-col {
+    display: grid;
+    grid-template-columns: 1.1fr .9fr;
+    gap: 34px;
+    align-items: center;
+    margin-top: 30px;
+  }
+
+  .quote {
+    border-left: 3px solid var(--accent);
+    padding: 6px 0 6px 20px;
+    color: var(--muted);
+    font-size: clamp(15px, 1.4vw, 19px);
+    line-height: 1.55;
+    font-style: italic;
+    margin-top: 28px;
+    max-width: 60ch;
+  }
+
+  a { color: var(--accent); text-decoration: none; border-bottom: 1px solid rgba(76,201,240,.35); }
+  a:hover { border-bottom-color: var(--accent); }
+
+  /* Navegação */
+  .controls {
+    position: fixed;
+    right: 28px;
+    bottom: 22px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    z-index: 20;
+  }
+
+  .controls button {
+    width: 40px; height: 40px;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    background: rgba(19, 26, 46, .85);
+    color: var(--text);
+    font-size: 20px;
+    cursor: pointer;
+    transition: border-color .2s, background .2s;
+  }
+
+  .controls button:hover { border-color: var(--accent); background: var(--panel-2); }
+
+  #counter {
+    font-size: 13px;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: .08em;
+    min-width: 52px;
+    text-align: center;
+  }
+
+  .progress {
+    position: fixed;
+    left: 0; bottom: 0;
+    height: 3px;
+    width: 100%;
+    background: rgba(38, 48, 77, .5);
+    z-index: 20;
+  }
+
+  #bar {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    transition: width .3s ease;
+  }
+
+  @media (max-width: 860px) {
+    .cards { grid-template-columns: 1fr; }
+    .two-col { grid-template-columns: 1fr; }
+    .timeline { flex-wrap: wrap; gap: 22px; }
+    .timeline::before { display: none; }
+    .step { flex: 1 1 40%; }
+    .slide { padding: 7vh 7vw; }
+  }
+</style>
+</head>
+<body>
+
+<main id="deck">
+
+  <!-- 1. Capa -->
+  <section class="slide cover active">
+    <div class="badge"><span class="dot"></span> Projeto MNIST-FPGA</div>
+    <h1>Da pesquisa<br>à prática</h1>
+    <p class="sub">Linha do tempo do desenvolvimento: divisão da equipe, organização no GitHub,
+      estudo de IA e o primeiro modelo funcionando.</p>
+    <p class="hint">Use as setas &larr; &rarr; para navegar</p>
+    <div class="footer-tag">Apresentação de progresso</div>
+  </section>
+
+  <!-- 2. Linha do tempo -->
+  <section class="slide">
+    <div class="rule"></div>
+    <div class="kicker">Visão geral</div>
+    <h2>A linha do tempo</h2>
+    <div class="timeline">
+      <div class="step">
+        <div class="circle">1</div>
+        <div class="label">Divisão da equipe<small>4 frentes de pesquisa</small></div>
+      </div>
+      <div class="step">
+        <div class="circle">2</div>
+        <div class="label">GitHub<small>branches e pastas</small></div>
+      </div>
+      <div class="step">
+        <div class="circle">3</div>
+        <div class="label">Estudo de IA<small>do zero, com livro</small></div>
+      </div>
+      <div class="step">
+        <div class="circle">4</div>
+        <div class="label">Apostila<small>com apoio do Codex</small></div>
+      </div>
+      <div class="step">
+        <div class="circle">5</div>
+        <div class="label">Perceptron<small>primeiro código</small></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. Divisão da equipe -->
+  <section class="slide">
+    <div class="rule"></div>
+    <div class="kicker">Etapa 1</div>
+    <h2>Divisão da equipe</h2>
+    <p class="sub">Após a primeira apresentação, o grupo foi organizado em quatro frentes de pesquisa,
+      cada uma com um responsável.</p>
+    <div class="cards">
+      <div class="card">
+        <h3>Arquitetura sequencial</h3>
+        <p>Cálculo dos neurônios um de cada vez, priorizando simplicidade e uso reduzido de recursos.</p>
+      </div>
+      <div class="card">
+        <h3>Arquitetura paralela</h3>
+        <p>Execução simultânea de operações, buscando desempenho em troca de mais área no FPGA.</p>
+      </div>
+      <div class="card">
+        <h3>Inteligência Artificial</h3>
+        <p>Estudo da rede neural, do treinamento e da quantização do modelo para o hardware.</p>
+      </div>
+      <div class="card">
+        <h3>Integração</h3>
+        <p>Responsável por conectar as partes: modelo, arquiteturas de hardware e resultados.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. GitHub -->
+  <section class="slide">
+    <div class="rule"></div>
+    <div class="kicker">Etapa 2</div>
+    <h2>Organização no GitHub</h2>
+    <p class="sub">Repositório criado e estruturado com branches e pastas por área, para que cada
+      membro trabalhasse de forma independente.</p>
+    <pre><span class="muted">MNIST-FPGA/</span>
+├── <span class="arrow">modelo/</span>        <span class="muted"># rede neural e código de IA</span>
+├── <span class="arrow">hardware/</span>      <span class="muted"># sequencial, paralelo, comum e placa</span>
+├── <span class="arrow">testes/</span>        <span class="muted"># validação</span>
+├── <span class="arrow">resultados/</span>    <span class="muted"># medições e comparações</span>
+├── <span class="arrow">artigo/</span>        <span class="muted"># documentação científica</span>
+└── <span class="arrow">docs/</span>          <span class="muted"># materiais de apoio</span></pre>
+    <p class="quote">Cada membro com sua branch e sua pasta: menos conflito e mais autonomia.</p>
+  </section>
+
+  <!-- 5. Estudo de IA -->
+  <section class="slide">
+    <div class="rule"></div>
+    <div class="kicker">Etapa 3</div>
+    <h2>Estudo de IA desde a base</h2>
+    <div class="two-col">
+      <div>
+        <ul class="clean">
+          <li>Busca por material didático acessível em português</li>
+          <li>Encontrado o <strong>Deep Learning Book Brasil</strong>, com 100 capítulos</li>
+          <li>Leitura dos capítulos iniciais: neurônio, pesos, bias e ativação</li>
+          <li class="dim">Mesma sequência que aparece na apostila das Aulas 1 a 5</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Fonte de estudo</h3>
+        <p style="margin-top:8px">
+          <a href="https://www.deeplearningbook.com.br/deep-learning-a-tempestade-perfeita/" target="_blank" rel="noopener">
+            Deep Learning — A tempestade perfeita
+          </a>
+        </p>
+        <p style="margin-top:10px">100 capítulos para aprendizagem e montagem de um modelo de IA.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6. Obstáculo -->
+  <section class="slide">
+    <div class="rule"></div>
+    <div class="kicker">Etapa 4</div>
+    <h2>O obstáculo: código pronto</h2>
+    <p class="sub">Para ganhar agilidade, foi tentado o código de exemplo do capítulo 13 do livro.</p>
+    <ul class="clean">
+      <li>O código era muito mais complexo do que o nível estudado até ali</li>
+      <li>Sem dominar a base, copiar não gera entendimento</li>
+      <li>Decisão: <strong>voltar ao fundamento</strong> e construir o próprio material</li>
+    </ul>
+    <p class="quote">Aprender o caminho importa mais do que pular direto para a resposta.</p>
+  </section>
+
+  <!-- 7. Apostila -->
+  <section class="slide">
+    <div class="rule"></div>
+    <div class="kicker">Etapa 5</div>
+    <h2>Apostila com apoio do Codex</h2>
+    <div class="two-col">
+      <div>
+        <ul class="clean">
+          <li>Aulas e dúvidas transformadas em material próprio</li>
+          <li>Conteúdo organizado em 5 aulas, do pixel à operação matricial</li>
+          <li>Exemplos em Python ligados ao código real do projeto</li>
+          <li>Ligação direta com a classe <strong>Network</strong> (<span class="accent">modelo/modelo.py</span>)</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Percurso da apostila</h3>
+        <p style="margin-top:8px">
+          Aula 1 — Imagem, pixels e rótulos<br>
+          Aula 2 — Neurônio e soma ponderada<br>
+          Aula 3 — Bias e ativação<br>
+          Aula 4 — Camada e matriz de pesos<br>
+          Aula 5 — NumPy e <span class="accent">z = Wx + b</span>
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8. Perceptron -->
+  <section class="slide">
+    <div class="rule"></div>
+    <div class="kicker">Etapa 6</div>
+    <h2>Resultado: perceptron funcional</h2>
+    <div class="two-col">
+      <div>
+        <ul class="clean">
+          <li>Um único neurônio: <strong>25 entradas</strong> (pixels 5×5) → 1 saída</li>
+          <li>Aprende a distinguir os dígitos <strong>0 e 1</strong></li>
+          <li>Treina sozinho: erro cai até zero</li>
+          <li>Classifica uma imagem nova, nunca vista</li>
+        </ul>
+      </div>
+      <pre><span class="muted">$ python3 modelo/perceptron_demo.py</span>
+<span class="arrow">epoca 1</span> | erros: 6
+<span class="arrow">epoca 2</span> | erros: 4
+<span class="arrow">...</span>
+<span class="arrow">epoca 8</span> | erros: <span class="ok">0</span>
+<span class="ok">Treinamento encerrado: zero erros.</span>
+
+imagem nova <span class="arrow">-&gt;</span> predicao = <span class="ok">1</span></pre>
+    </div>
+  </section>
+
+  <!-- 9. Próximos passos -->
+  <section class="slide">
+    <div class="rule"></div>
+    <div class="kicker">Encerramento</div>
+    <h2>Próximos passos</h2>
+    <div class="cards">
+      <div class="card">
+        <h3>Modelo completo</h3>
+        <p>Evoluir do perceptron para a classe Network, com sigmoide e backpropagation.</p>
+      </div>
+      <div class="card">
+        <h3>Quantização</h3>
+        <p>Converter pesos para inteiros, preparando o modelo para o FPGA.</p>
+      </div>
+      <div class="card">
+        <h3>Hardware</h3>
+        <p>Implementar as versões sequencial e paralela e comparar desempenho e recursos.</p>
+      </div>
+      <div class="card">
+        <h3>Integração</h3>
+        <p>Unir modelo e hardware, medir resultados e documentar a comparação.</p>
+      </div>
+    </div>
+    <p class="quote" style="margin-top:34px">Obrigado. Perguntas?</p>
+  </section>
+
+</main>
+
+<div class="progress"><div id="bar"></div></div>
+
+<nav class="controls">
+  <button id="prev" aria-label="Slide anterior">&lsaquo;</button>
+  <span id="counter">1 / 9</span>
+  <button id="next" aria-label="Próximo slide">&rsaquo;</button>
+</nav>
+
+<script>
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const counter = document.getElementById('counter');
+  const bar = document.getElementById('bar');
+  let current = 0;
+
+  function render() {
+    slides.forEach((slide, i) => slide.classList.toggle('active', i === current));
+    counter.textContent = (current + 1) + ' / ' + slides.length;
+    bar.style.width = ((current + 1) / slides.length * 100) + '%';
+    history.replaceState(null, '', '#' + (current + 1));
+  }
+
+  function go(index) {
+    current = Math.max(0, Math.min(slides.length - 1, index));
+    render();
+  }
+
+  document.getElementById('next').addEventListener('click', () => go(current + 1));
+  document.getElementById('prev').addEventListener('click', () => go(current - 1));
+
+  window.addEventListener('keydown', (event) => {
+    const next = ['ArrowRight', 'ArrowDown', 'PageDown', ' '];
+    const prev = ['ArrowLeft', 'ArrowUp', 'PageUp'];
+
+    if (next.includes(event.key)) { event.preventDefault(); go(current + 1); }
+    else if (prev.includes(event.key)) { event.preventDefault(); go(current - 1); }
+    else if (event.key === 'Home') { event.preventDefault(); go(0); }
+    else if (event.key === 'End') { event.preventDefault(); go(slides.length - 1); }
+  });
+
+  const fromHash = parseInt(location.hash.replace('#', ''), 10);
+  if (!isNaN(fromHash)) current = Math.max(0, Math.min(slides.length - 1, fromHash - 1));
+
+  render();
+</script>
+
+</body>
+</html>
