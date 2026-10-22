@@ -122,7 +122,7 @@ for epoca in range(1, 31):
 
     print("epoca", epoca, "| erros:", erros)
 
-    if (erros == 0) and (epoca>5) :
+    if (erros == 0):
         print("Treinamento encerrado na epoca", epoca, ": zero erros.")
         break
 
